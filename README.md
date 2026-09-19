@@ -209,7 +209,7 @@ spring-jdbc-tutorial/
 │           ├── dto/ (OrderDto.java)
 │           ├── mapper/ (OrderRowMapper.java, OrderMapper.java)
 │           ├── dao/ (OrderDao.java + impl/)
-│           ├── service/ (OrderService.java + impl/, depends on CategoryService/ProductService/CustomerService)
+│           ├── service/ (OrderService.java + impl/, depends on ProductService/CustomerService only: the category is never needed)
 │           └── config/ (DaoConfig.java, ServiceConfig.java)
 └── ws/
     ├── pom.xml                                    (depends on core/auth, core/catalog, core/customer, core/order)
@@ -235,9 +235,9 @@ spring-jdbc-tutorial/
         │   │                                           in this project, since Spring MVC requires it for this mechanism)
         │   └── config/
         │       ├── WebAppInitializer.java            (WebApplicationInitializer, replaces web.xml)
-        │       ├── WebMvcConfig.java                 (@EnableWebMvc, imports every core module's DaoConfig/ServiceConfig)
+        │       ├── WebMvcConfig.java                 (@EnableWebMvc, imports every core module's DaoConfig/ServiceConfig, scans only ws.controller and ws.exception)
         │       ├── SecurityConfig.java                (SecurityFilterChain, method security enabling @PreAuthorize)
-        │       └── OpenApiConfig.java
+        │       └── OpenApiConfig.java                (not delivered: springdoc-openapi relies on Spring Boot classes)
         └── webapp/
             └── (empty - no JSPs, API-only)
 ├── docker-compose.yml
@@ -310,13 +310,13 @@ No other naming style (`shouldX()`, `testX()`, `givenX_whenY_thenZ()`) is used a
 
 ### Tasks
 
-- [ ] Parent `pom.xml` (packaging `pom`, modules `core`/`ws`, `dependencyManagement` for Spring Framework 6.2.x, Testcontainers, etc.)
-- [ ] `core/pom.xml` (packaging `pom`, modules `common`/`auth`/`catalog`/`customer`/`order`)
-- [ ] `core/common`: `ResourceNotFoundException`, `BusinessRuleException`, `AbstractDao` (holds a `JdbcTemplate` reference, offers a couple of shared helpers), `DataSourceConfig` (`DataSource` via HikariCP, `JdbcTemplate`, `DataSourceTransactionManager`)
-- [ ] Flyway script `V1__init_schema.sql` (all tables from both domains, including `audit_logs`)
-- [ ] `ws` skeleton: `WebAppInitializer` (`WebApplicationInitializer`), `WebMvcConfig` (`@EnableWebMvc`, no module config imported yet), `ApiResponse<T>`, `PageResponse<T>`, `GlobalExceptionHandler`
-- [ ] `docker-compose.yml` (`ws` deployed on Tomcat + PostgreSQL), `Dockerfile` (multi-stage: Maven build, Tomcat 10.1 runtime)
-- [ ] `.github/workflows/ci.yml`: `mvn verify` across the whole reactor
+- [x] Parent `pom.xml` (packaging `pom`, modules `core`/`ws`, `dependencyManagement` for Spring Framework 6.2.x, Testcontainers, etc.)
+- [x] `core/pom.xml` (packaging `pom`, modules `common`/`auth`/`catalog`/`customer`/`order`)
+- [x] `core/common`: `ResourceNotFoundException`, `BusinessRuleException`, `AbstractDao` (holds a `JdbcTemplate` reference, offers a couple of shared helpers), `DataSourceConfig` (`DataSource` via HikariCP, `JdbcTemplate`, `DataSourceTransactionManager`)
+- [x] Flyway script `V1__init_schema.sql` (all tables from both domains, including `audit_logs`)
+- [x] `ws` skeleton: `WebAppInitializer` (`WebApplicationInitializer`), `WebMvcConfig` (`@EnableWebMvc`, no module config imported yet), `ApiResponse<T>`, `PageResponse<T>`, `GlobalExceptionHandler`
+- [x] `docker-compose.yml` (`ws` deployed on Tomcat + PostgreSQL), `Dockerfile` (multi-stage: Maven build, Tomcat 10.1 runtime)
+- [x] `.github/workflows/ci.yml`: `mvn verify` across the whole reactor
 
 ## feature/auth
 
@@ -334,15 +334,15 @@ No other naming style (`shouldX()`, `testX()`, `givenX_whenY_thenZ()`) is used a
 
 ### Tasks
 
-- [ ] `core/auth`: `User`, `ActivationToken`, `BlacklistedToken`, `PasswordResetToken` **entity** classes (`entity/`, `@Table("users")`/`@Table("activation_tokens")`/etc., `@Id`/`@Column` on fields, plain Java otherwise) and their matching `UserDto`, `ActivationTokenDto`, `BlacklistedTokenDto`, `PasswordResetTokenDto` classes (`dto/`)
-- [ ] `UserRowMapper`, `ActivationTokenRowMapper`, `BlacklistedTokenRowMapper`, `PasswordResetTokenRowMapper` (`ResultSet` → entity), and `UserMapper` (entity ↔ dto, the only one of these four actually needed yet - the token entities/dtos are used directly by `AuthServiceImpl` without a full bidirectional mapper, since nothing outside the service ever needs a token dto's shape beyond what `AuthController` reads directly off `AuthService`'s own return types)
-- [ ] `UserDao` + `UserDaoImpl` (and the token DAOs), all `JdbcTemplate`-based, all unannotated, all working in `entity/` types
-- [ ] `AuthService` (interface) + `AuthServiceImpl`: registration, activation, login (password hashing/verification via `org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder`, used standalone), logout, forgot/reset password - every public method takes/returns `dto/` types, converting to/from `entity/` via `UserMapper` around each `UserDao` call
-- [ ] `forgotPassword` returns the exact same outcome - same behavior, roughly the same timing - whether or not the submitted email matches an existing account, so the endpoint can't be used to enumerate registered emails
-- [ ] `core/auth`'s `DaoConfig`/`ServiceConfig`
-- [ ] `ws`: `JwtService` (issuance/validation via `jjwt`, unique `jti` per token), `JwtAuthFilter`, `AuthController`, `UserConverter` (`core.auth.dto.UserDto` ↔ `ws.payload.auth.*`)
-- [ ] `WebMvcConfig` updated to import `core/auth`'s `DaoConfig`/`ServiceConfig`
-- [ ] Tests at all five layers (see [Testing strategy](#testing-strategy)): `UserDao`/token DAOs against Testcontainers with their own fixture files, each `RowMapper` against a mocked `ResultSet`, `UserMapper` against a hand-built entity/dto pair (pure unit test, no mocks needed), `AuthServiceImpl` with `UserDao` mocked, `AuthController` via `MockMvc` with `AuthService` mocked - plus one full register → activate → login → `/me` flow
+- [x] `core/auth`: `User`, `ActivationToken`, `BlacklistedToken`, `PasswordResetToken` **entity** classes (`entity/`, `@Table("users")`/`@Table("activation_tokens")`/etc., `@Id`/`@Column` on fields, plain Java otherwise) and their matching `UserDto`, `ActivationTokenDto`, `BlacklistedTokenDto`, `PasswordResetTokenDto` classes (`dto/`)
+- [x] `UserRowMapper`, `ActivationTokenRowMapper`, `BlacklistedTokenRowMapper`, `PasswordResetTokenRowMapper` (`ResultSet` → entity), and `UserMapper` (entity ↔ dto, the only one of these four actually needed yet - the token entities/dtos are used directly by `AuthServiceImpl` without a full bidirectional mapper, since nothing outside the service ever needs a token dto's shape beyond what `AuthController` reads directly off `AuthService`'s own return types)
+- [x] `UserDao` + `UserDaoImpl` (and the token DAOs), all `JdbcTemplate`-based, all unannotated, all working in `entity/` types
+- [x] `AuthService` (interface) + `AuthServiceImpl`: registration, activation, login (password hashing/verification via `org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder`, used standalone), logout, forgot/reset password - every public method takes/returns `dto/` types, converting to/from `entity/` via `UserMapper` around each `UserDao` call
+- [x] `forgotPassword` returns the exact same outcome - same behavior, roughly the same timing - whether or not the submitted email matches an existing account, so the endpoint can't be used to enumerate registered emails
+- [x] `core/auth`'s `DaoConfig`/`ServiceConfig`
+- [x] `ws`: `JwtService` (issuance/validation via `jjwt`, unique `jti` per token), `JwtAuthFilter`, `AuthController`, `UserConverter` (`core.auth.dto.UserDto` ↔ `ws.payload.auth.*`)
+- [x] `WebMvcConfig` updated to import `core/auth`'s `DaoConfig`/`ServiceConfig`
+- [x] Tests at all five layers (see [Testing strategy](#testing-strategy)): `UserDao`/token DAOs against Testcontainers with their own fixture files, each `RowMapper` against a mocked `ResultSet`, `UserMapper` against a hand-built entity/dto pair (pure unit test, no mocks needed), `AuthServiceImpl` with `UserDao` mocked, `AuthController` via `MockMvc` with `AuthService` mocked - plus one full register → activate → login → `/me` flow
 
 ## feature/rbac
 
@@ -369,18 +369,18 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `Role`, `Permission`, `AuditLog` entity classes (`entity/`, `@Table("roles")`/`@Table("permissions")`/`@Table("audit_logs")`) and `RoleDto`/`PermissionDto`/`AuditLogDto` (`dto/`), `RoleRowMapper`/`PermissionRowMapper`/`AuditLogRowMapper` (entity, from `ResultSet`) plus `RoleMapper`/`PermissionMapper`/`AuditLogMapper` (entity ↔ dto), `RoleDao`/`PermissionDao`/`AuditLogDao` + impl (working in entity/ types)
-- [ ] `RbacService` (interface) + `RbacServiceImpl`:
+- [x] `Role`, `Permission`, `AuditLog` entity classes (`entity/`, `@Table("roles")`/`@Table("permissions")`/`@Table("audit_logs")`) and `RoleDto`/`PermissionDto`/`AuditLogDto` (`dto/`), `RoleRowMapper`/`PermissionRowMapper`/`AuditLogRowMapper` (entity, from `ResultSet`) plus `RoleMapper`/`PermissionMapper`/`AuditLogMapper` (entity ↔ dto), `RoleDao`/`PermissionDao`/`AuditLogDao` + impl (working in entity/ types)
+- [x] `RbacService` (interface) + `RbacServiceImpl`:
   - `createRole`/`updateRole`/`deleteRole` - `deleteRole` rejects if any user is still assigned this role
   - `createPermission`/`updatePermission`/`deletePermission` - rejects if any role still has this permission
   - `assignPermissionToRole`/`removePermissionFromRole` - rejects removing `ROLE:WRITE` from a role if it would leave zero users anywhere holding a role that grants it
   - `assignRoleToUser`/`removeRoleFromUser` - the same last-admin check applied at the point of removal from a specific user
-- [ ] `AuditLogger`/`AuditLoggerImpl`: a single `log(String action, String entityType, Long entityId, String details)` method, called from every `RbacServiceImpl` mutation
-- [ ] `CustomPermissionEvaluator` (`ws`, implements Spring Security's `PermissionEvaluator`): resolves the authenticated user's permissions (loaded once at login and embedded in the JWT, read from the `Authentication` object - no database call per request) and answers `hasPermission(target, permission)` calls from `@PreAuthorize`
-- [ ] `SecurityConfig` updated: `@EnableMethodSecurity`, `CustomPermissionEvaluator` registered on the `MethodSecurityExpressionHandler`
-- [ ] A seeding step (a Flyway data-migration): baseline permissions covering every resource/action this project defines, assigned to a seeded `ADMIN` role - without this, nobody could ever be granted `ROLE:WRITE`/`PERMISSION:WRITE` to create the first assignment
-- [ ] `RoleController`, `PermissionController`, `UserController` role-assignment endpoints, `RoleConverter`/`PermissionConverter`
-- [ ] Tests at all five layers, including the "still referenced" rejection on `deleteRole`/`deletePermission`, the last-admin rejection triggered both ways, `CustomPermissionEvaluator` allowing/denying correctly, and an assertion that every `RbacServiceImpl` mutation produces a matching `AuditLog` row
+- [x] `AuditLogger`/`AuditLoggerImpl`: a single `log(String action, String entityType, Long entityId, String details)` method, called from every `RbacServiceImpl` mutation
+- [x] `CustomPermissionEvaluator` (`ws`, implements Spring Security's `PermissionEvaluator`): resolves the authenticated user's permissions (loaded once at login and embedded in the JWT, read from the `Authentication` object - no database call per request) and answers `hasPermission(target, permission)` calls from `@PreAuthorize`
+- [x] `SecurityConfig` updated: `@EnableMethodSecurity`, `CustomPermissionEvaluator` registered on the `MethodSecurityExpressionHandler`
+- [x] A seeding step (a Flyway data-migration): baseline permissions covering every resource/action this project defines, assigned to a seeded `ADMIN` role - without this, nobody could ever be granted `ROLE:WRITE`/`PERMISSION:WRITE` to create the first assignment
+- [x] `RoleController`, `PermissionController`, `UserController` role-assignment endpoints, `RoleConverter`/`PermissionConverter`
+- [x] Tests at all five layers, including the "still referenced" rejection on `deleteRole`/`deletePermission`, the last-admin rejection triggered both ways, `CustomPermissionEvaluator` allowing/denying correctly, and an assertion that every `RbacServiceImpl` mutation produces a matching `AuditLog` row
 
 ## feature/catalog
 
@@ -401,11 +401,11 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/catalog`: `Category`, `Product` entity classes (`@Table("categories")`/`@Table("products")`) and `CategoryDto`/`ProductDto`, `CategoryRowMapper`/`ProductRowMapper` (entity) plus `CategoryMapper`/`ProductMapper` (entity ↔ dto), `CategoryDao`/`ProductDao` + impl, `CategoryService`/`ProductService` + impl, `DaoConfig`/`ServiceConfig`
-- [ ] Business rule: deleting a category that still has products is rejected (`BusinessRuleException` → 422)
-- [ ] `ws`: `CategoryController`, `ProductController`, `CategoryConverter`, `ProductConverter`
-- [ ] `WebMvcConfig` updated to import `core/catalog`'s config
-- [ ] Tests at all five layers - `CategoryDao`/`ProductDao` each with their own fixture dataset, the category-deletion rejection case, a permission-denied case
+- [x] `core/catalog`: `Category`, `Product` entity classes (`@Table("categories")`/`@Table("products")`) and `CategoryDto`/`ProductDto`, `CategoryRowMapper`/`ProductRowMapper` (entity) plus `CategoryMapper`/`ProductMapper` (entity ↔ dto), `CategoryDao`/`ProductDao` + impl, `CategoryService`/`ProductService` + impl, `DaoConfig`/`ServiceConfig`
+- [x] Business rule: deleting a category that still has products is rejected (`BusinessRuleException` → 422)
+- [x] `ws`: `CategoryController`, `ProductController`, `CategoryConverter`, `ProductConverter`
+- [x] `WebMvcConfig` updated to import `core/catalog`'s config
+- [x] Tests at all five layers - `CategoryDao`/`ProductDao` each with their own fixture dataset, the category-deletion rejection case, a permission-denied case
 
 ## feature/customer
 
@@ -421,10 +421,10 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/customer`: `Customer` entity (`@Table("customers")`) and `CustomerDto`, `CustomerRowMapper` (entity) plus `CustomerMapper` (entity ↔ dto), `CustomerDao` + impl, `CustomerService` + impl, `DaoConfig`/`ServiceConfig`
-- [ ] `ws`: `CustomerController`, `CustomerConverter`
-- [ ] `WebMvcConfig` updated to import `core/customer`'s config
-- [ ] Tests at all five layers, `CustomerDao` with its own fixture dataset
+- [x] `core/customer`: `Customer` entity (`@Table("customers")`) and `CustomerDto`, `CustomerRowMapper` (entity) plus `CustomerMapper` (entity ↔ dto), `CustomerDao` + impl, `CustomerService` + impl, `DaoConfig`/`ServiceConfig`
+- [x] `ws`: `CustomerController`, `CustomerConverter`
+- [x] `WebMvcConfig` updated to import `core/customer`'s config
+- [x] Tests at all five layers, `CustomerDao` with its own fixture dataset
 
 ## feature/order
 
@@ -438,11 +438,11 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/order`: `Order` entity (`@Table("orders")`) and `OrderDto`, `OrderRowMapper` (entity) plus `OrderMapper` (entity ↔ dto), `OrderDao` + impl, `OrderService` + impl (depends on `catalog`'s `ProductService` and `customer`'s `CustomerService` - their service interfaces, never their DAOs directly): computes `total = quantity * product.unitPrice`, checks the referenced customer/product exist
-- [ ] `core/order`'s `DaoConfig`/`ServiceConfig` (the latter injecting `ProductService`/`CustomerService` beans from the other modules' contexts)
-- [ ] `ws`: `OrderController`, `OrderConverter`
-- [ ] `WebMvcConfig` updated to import `core/order`'s config
-- [ ] Tests at all five layers, `OrderDao` with its own fixture dataset, the total computation, and the not-found cases for a bad `customerId`/`productId`
+- [x] `core/order`: `Order` entity (`@Table("orders")`) and `OrderDto`, `OrderRowMapper` (entity) plus `OrderMapper` (entity ↔ dto), `OrderDao` + impl, `OrderService` + impl (depends on `catalog`'s `ProductService` and `customer`'s `CustomerService` - their service interfaces, never their DAOs directly): computes `total = quantity * product.unitPrice`, checks the referenced customer/product exist
+- [x] `core/order`'s `DaoConfig`/`ServiceConfig` (the latter injecting `ProductService`/`CustomerService` beans from the other modules' contexts)
+- [x] `ws`: `OrderController`, `OrderConverter`
+- [x] `WebMvcConfig` updated to import `core/order`'s config
+- [x] Tests at all five layers, `OrderDao` with its own fixture dataset, the total computation, and the not-found cases for a bad `customerId`/`productId`
 
 ## Order of work
 
@@ -489,5 +489,6 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 1. Clone the repository and check out `develop`
 2. Follow the branches in order: `feature/core-architecture` → `feature/auth` → `feature/rbac` → `feature/catalog` → `feature/customer` → `feature/order`
-3. Run `docker-compose up`, then deploy the WAR (`mvn package` at the root, then deploy `ws/target/ws.war` to Tomcat 10.1, or configure `mvn tomcat10:deploy`)
-4. Access the API at `http://localhost:8080/spring-jdbc-tutorial/api/v1/...`
+3. Run the tests with `./mvnw verify` (needs a Docker daemon: the DAO tests start PostgreSQL through Testcontainers)
+4. Run the packaged application: `cp .env.example .env` and set `DB_PASSWORD`, generate an RSA key pair in `./keys` (the commands are at the top of `docker-compose.yml`), then `docker compose up --build`. The image builds `ws/target/ws.war` and deploys it on Tomcat 10.1 as `spring-jdbc-tutorial.war`; there is no `tomcat10:deploy` configuration
+5. Access the API at `http://localhost:${APP_PORT}/spring-jdbc-tutorial/api/v1/...` (`APP_PORT` defaults to 8080). `GET /api/v1/health` is public; to get a first administrator in development, see `dev-keys/README.md`
