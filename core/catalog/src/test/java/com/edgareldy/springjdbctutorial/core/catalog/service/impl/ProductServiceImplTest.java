@@ -314,4 +314,32 @@ class ProductServiceImplTest {
         assertThatThrownBy(() -> service().delete(3L))
                 .isInstanceOf(BusinessRuleException.class).hasCause(fk);
     }
+
+    // Non-regression: the category can vanish between the existence check and the write
+    @Test
+    void _29_ShouldThrowResourceNotFoundException_WhenTheCategoryIsDeletedBeforeTheInsert() {
+        categoryExists(2L);
+        when(productDao.insert(any(Product.class))).thenThrow(new DataIntegrityViolationException("fk_products_category"));
+
+        assertThatThrownBy(() -> service().create(input(2L, "Chess", "25.99")))
+                .isInstanceOf(ResourceNotFoundException.class).hasMessage("Category not found: 2");
+    }
+
+    @Test
+    void _30_ShouldThrowResourceNotFoundException_WhenTheCategoryIsDeletedBeforeTheUpdate() {
+        categoryExists(2L);
+        when(productDao.findById(3L)).thenReturn(Optional.of(new Product(3L, 2L, "Chess", new BigDecimal("25.99"))));
+        doThrow(new DataIntegrityViolationException("fk_products_category")).when(productDao).update(any(Product.class));
+
+        assertThatThrownBy(() -> service().update(3L, input(2L, "Chess", "26.00")))
+                .isInstanceOf(ResourceNotFoundException.class).hasMessage("Category not found: 2");
+    }
+
+    // Non-regression: a huge exponent must be refused by the bound before any setScale expansion
+    @Test
+    void _31_ShouldThrowBusinessRuleException_WhenThePriceHasAHugeExponent() {
+        assertThatThrownBy(() -> service().create(input(2L, "Chess", "1E+999999999")))
+                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("must not exceed");
+        verify(productDao, never()).insert(any());
+    }
 }

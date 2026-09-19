@@ -69,7 +69,12 @@ public class ProductServiceImpl implements ProductService {
         String name = cleanName(input.getProductName());
         BigDecimal price = cleanPrice(input.getUnitPrice());
         requireCategory(input.getCategoryId());
-        return mapper.toDto(productDao.insert(new Product(null, input.getCategoryId(), name, price)));
+        try {
+            return mapper.toDto(productDao.insert(new Product(null, input.getCategoryId(), name, price)));
+        } catch (DataIntegrityViolationException e) {
+            // The category was deleted between the check above and the insert: the foreign key decided
+            throw new ResourceNotFoundException("Category not found: " + input.getCategoryId());
+        }
     }
 
     @Override
@@ -82,7 +87,12 @@ public class ProductServiceImpl implements ProductService {
         product.setCategoryId(input.getCategoryId());
         product.setProductName(name);
         product.setUnitPrice(price);
-        productDao.update(product);
+        try {
+            productDao.update(product);
+        } catch (DataIntegrityViolationException e) {
+            // Same race as in create: the category vanished after the existence check
+            throw new ResourceNotFoundException("Category not found: " + input.getCategoryId());
+        }
         return mapper.toDto(product);
     }
 
@@ -131,10 +141,10 @@ public class ProductServiceImpl implements ProductService {
         if (raw.stripTrailingZeros().scale() > PRICE_SCALE) {
             throw new BusinessRuleException("Unit price must have at most " + PRICE_SCALE + " decimals");
         }
-        BigDecimal price = raw.setScale(PRICE_SCALE);
-        if (price.compareTo(MAX_PRICE) > 0) {
+        // Bound first: setScale on a value such as 1E+999999999 would build a gigantic number
+        if (raw.compareTo(MAX_PRICE) > 0) {
             throw new BusinessRuleException("Unit price must not exceed " + MAX_PRICE.toPlainString());
         }
-        return price;
+        return raw.setScale(PRICE_SCALE);
     }
 }
