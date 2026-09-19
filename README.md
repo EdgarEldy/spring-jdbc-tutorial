@@ -489,5 +489,6 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 1. Clone the repository and check out `develop`
 2. Follow the branches in order: `feature/core-architecture` → `feature/auth` → `feature/rbac` → `feature/catalog` → `feature/customer` → `feature/order`
-3. Run `docker-compose up`, then deploy the WAR (`mvn package` at the root, then deploy `ws/target/ws.war` to Tomcat 10.1, or configure `mvn tomcat10:deploy`)
-4. Access the API at `http://localhost:8080/spring-jdbc-tutorial/api/v1/...`
+3. Run the tests with `./mvnw verify` (needs a Docker daemon: the DAO tests start PostgreSQL through Testcontainers)
+4. Run the packaged application: `cp .env.example .env` and set `DB_PASSWORD`, generate an RSA key pair in `./keys` (the commands are at the top of `docker-compose.yml`), then `docker compose up --build`. The image builds `ws/target/ws.war` and deploys it on Tomcat 10.1 as `spring-jdbc-tutorial.war`; there is no `tomcat10:deploy` configuration
+5. Access the API at `http://localhost:${APP_PORT}/spring-jdbc-tutorial/api/v1/...` (`APP_PORT` defaults to 8080). `GET /api/v1/health` is public; to get a first administrator in development, see `dev-keys/README.md`
