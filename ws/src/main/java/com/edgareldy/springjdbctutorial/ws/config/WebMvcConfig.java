@@ -3,6 +3,7 @@ package com.edgareldy.springjdbctutorial.ws.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.edgareldy.springjdbctutorial.core.common.config.CommonConfig;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -39,23 +40,29 @@ import java.util.List;
 @ComponentScan({"com.edgareldy.springjdbctutorial.ws.controller", "com.edgareldy.springjdbctutorial.ws.exception"})
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    // Replaces the default converters with a single Jackson one. The builder registers the JSR-310
-    // module (jackson-datatype-jsr310) found on the classpath; disabling WRITE_DATES_AS_TIMESTAMPS
-    // makes Instant serialise as ISO-8601 text instead of a number. Null fields stay in the output.
+    // Swaps the default Jackson converter for one built on our ObjectMapper and keeps every other
+    // default converter (String, byte[], Resource...). The builder registers the JSR-310 module
+    // (jackson-datatype-jsr310) found on the classpath; disabling WRITE_DATES_AS_TIMESTAMPS makes
+    // Instant serialise as ISO-8601 text instead of a number. Null fields stay in the output.
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         ObjectMapper mapper = Jackson2ObjectMapperBuilder.json()
                 .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .build();
-        converters.add(new MappingJackson2HttpMessageConverter(mapper));
+        converters.removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
+        converters.add(0, new MappingJackson2HttpMessageConverter(mapper));
     }
 
     // LocalValidatorFactoryBean bootstraps Bean Validation (Hibernate Validator on the classpath).
-    // Returning it from getValidator() makes @Valid on request bodies use it.
+    // Declared as a bean so Spring manages its lifecycle and injects the context; getValidator()
+    // returns that same instance so @Valid on request bodies uses it.
+    @Bean
+    public LocalValidatorFactoryBean validator() {
+        return new LocalValidatorFactoryBean();
+    }
+
     @Override
     public Validator getValidator() {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
-        return validator;
+        return validator();
     }
 }
