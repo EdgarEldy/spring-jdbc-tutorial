@@ -3,6 +3,8 @@ package com.edgareldy.springjdbctutorial.core.common.service.impl;
 import com.edgareldy.springjdbctutorial.core.common.dao.HealthDao;
 import com.edgareldy.springjdbctutorial.core.common.dto.HealthDto;
 import com.edgareldy.springjdbctutorial.core.common.service.HealthService;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.dao.DataAccessException;
 
 /**
@@ -14,6 +16,9 @@ import org.springframework.dao.DataAccessException;
  * Project : spring-jdbc-tutorial
  */
 public class HealthServiceImpl implements HealthService {
+
+    // Spring's own logging facade (spring-jcl): core needs no logging dependency, ws chooses the backend
+    private static final Log LOG = LogFactory.getLog(HealthServiceImpl.class);
 
     private final HealthDao healthDao;
 
@@ -28,7 +33,9 @@ public class HealthServiceImpl implements HealthService {
                 return new HealthDto("UP", "UP");
             }
         } catch (DataAccessException e) {
-            // JdbcTemplate translates SQLException into DataAccessException: database unreachable
+            // JdbcTemplate translates SQLException into DataAccessException: database unreachable.
+            // Logged so an operator sees the cause (bad credentials, network, exhausted pool).
+            LOG.warn("Database health check failed", e);
         }
         return new HealthDto("DOWN", "DOWN");
     }
