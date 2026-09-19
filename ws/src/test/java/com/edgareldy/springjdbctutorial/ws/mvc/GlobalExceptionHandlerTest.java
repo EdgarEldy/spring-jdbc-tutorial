@@ -107,6 +107,15 @@ class GlobalExceptionHandlerTest {
             throw new IllegalStateException("secret internal detail");
         }
 
+        // A Spring ErrorResponse exception without a dedicated handler, carrying framework wording
+        @GetMapping("/error-response")
+        String errorResponse() {
+            org.springframework.web.ErrorResponseException e = new org.springframework.web.ErrorResponseException(
+                    org.springframework.http.HttpStatus.CONFLICT);
+            e.getBody().setDetail("secret framework detail");
+            throw e;
+        }
+
         @PostMapping(value = "/body", consumes = MediaType.APPLICATION_JSON_VALUE)
         String body(@Valid @RequestBody SampleBody body) {
             return body.getName();
@@ -269,5 +278,15 @@ class GlobalExceptionHandlerTest {
         JsonNode json = assertErrorShape(result, 500);
         assertThat(json.get("message").asText()).isEqualTo("Internal server error");
         assertThat(result.getResponse().getContentAsString()).doesNotContain("secret internal detail");
+    }
+
+    // Non-regression: the catch-all used to copy the detail text of any ErrorResponse to the client
+    @Test
+    void _13_ShouldReturnReasonPhraseOnly_WhenAnErrorResponseExceptionHasNoDedicatedHandler() throws Exception {
+        MvcResult result = mockMvc.perform(get("/test/error-response")).andReturn();
+
+        JsonNode json = assertErrorShape(result, 409);
+        assertThat(json.get("message").asText()).isEqualTo("Conflict");
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("secret framework detail");
     }
 }

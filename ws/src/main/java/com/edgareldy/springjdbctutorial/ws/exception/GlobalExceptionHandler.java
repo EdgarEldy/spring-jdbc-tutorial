@@ -129,13 +129,20 @@ public class GlobalExceptionHandler {
     // AUTH BRANCH: add handlers here for AccessDeniedException (403) and AuthenticationException (401).
     // They are intentionally absent now: no Spring Security dependency exists yet.
 
-    // Catch-all. Other Spring MVC exceptions implementing ErrorResponse keep the status they carry;
-    // anything else is a 500 with a generic message, the real error is only logged.
+    // Catch-all. Other Spring MVC exceptions implementing ErrorResponse keep the status they carry but
+    // never their detail text (framework wording): the client gets the standard reason phrase of the
+    // status. A 5xx is logged like any unexpected error. Anything else is a 500 with a generic message,
+    // the real error is only logged.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception e) {
         if (e instanceof ErrorResponse errorResponse) {
-            return build(errorResponse.getStatusCode(), errorResponse.getBody().getDetail() != null
-                    ? errorResponse.getBody().getDetail() : "Request failed");
+            HttpStatusCode status = errorResponse.getStatusCode();
+            if (status.is5xxServerError()) {
+                LOG.error("Unexpected error", e);
+                return build(status, "Internal server error");
+            }
+            HttpStatus known = HttpStatus.resolve(status.value());
+            return build(status, known != null ? known.getReasonPhrase() : "Request failed");
         }
         LOG.error("Unexpected error", e);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
