@@ -1,9 +1,12 @@
 package com.edgareldy.springjdbctutorial.ws.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.edgareldy.springjdbctutorial.ws.support.ApiAssertions.assertError;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.edgareldy.springjdbctutorial.core.common.support.PostgresTestContainer;
+import com.edgareldy.springjdbctutorial.ws.support.AuthTestSupport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +21,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 /**
- * Full-stack integration test: the REAL WebMvcConfig (CommonConfig, DataSourceConfig, Flyway, real
- * service and DAO) against the Testcontainers PostgreSQL, driven through MockMvc.
+ * Full-stack integration test: the REAL WebMvcConfig (CommonConfig, DataSourceConfig, Flyway, auth services,
+ * SecurityConfig, real service and DAO) against the Testcontainers PostgreSQL, driven through MockMvc.
  * <p>
  * Created edgar.muhamyangabo on 9/19/26
  * Author : edgar.muhamyangabo
@@ -45,11 +48,13 @@ class WebMvcConfigIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        // springSecurity() adds the springSecurityFilterChain bean in front of MVC, as the DelegatingFilterProxy
+        // does in Tomcat, so the routes are really protected in these tests
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
     @Test
-    void _01_ShouldReturn200WithStatusUp_WhenHealthRouteIsCalledOnARealDatabase() throws Exception {
+    void _01_ShouldReturn200WithStatusUpWithoutToken_WhenHealthRouteIsCalledOnARealDatabase() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/health")).andReturn();
 
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
@@ -60,14 +65,16 @@ class WebMvcConfigIntegrationTest {
     }
 
     @Test
-    void _02_ShouldReturn404ApiResponse_WhenUrlIsUnknown() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/nothing-here")).andReturn();
+    void _02_ShouldReturn401ApiResponse_WhenUrlIsUnknownAndNoTokenIsSent() throws Exception {
+        assertError(mockMvc.perform(get("/api/v1/nothing-here")).andReturn(), 401);
+    }
 
-        assertThat(result.getResponse().getStatus()).isEqualTo(404);
-        JsonNode json = mapper.readTree(result.getResponse().getContentAsString());
-        assertThat(json.get("success").asBoolean()).isFalse();
-        assertThat(json.get("message").asText()).isNotBlank();
-        assertThat(json.get("data") == null || json.get("data").isNull()).isTrue();
-        assertThat(json.get("timestamp").asText()).isNotBlank();
+    @Test
+    void _03_ShouldReturn404ApiResponse_WhenUrlIsUnknownAndTokenIsValid() throws Exception {
+        try (AuthTestSupport support = new AuthTestSupport(mockMvc)) {
+            String token = support.registerActivateAndLogin(AuthTestSupport.uniqueEmail("config"), AuthTestSupport.PASSWORD);
+
+            assertError(support.getAs(token, "/api/v1/nothing-here"), 404);
+        }
     }
 }
