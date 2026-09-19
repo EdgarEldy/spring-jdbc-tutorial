@@ -334,15 +334,15 @@ No other naming style (`shouldX()`, `testX()`, `givenX_whenY_thenZ()`) is used a
 
 ### Tasks
 
-- [ ] `core/auth`: `User`, `ActivationToken`, `BlacklistedToken`, `PasswordResetToken` **entity** classes (`entity/`, `@Table("users")`/`@Table("activation_tokens")`/etc., `@Id`/`@Column` on fields, plain Java otherwise) and their matching `UserDto`, `ActivationTokenDto`, `BlacklistedTokenDto`, `PasswordResetTokenDto` classes (`dto/`)
-- [ ] `UserRowMapper`, `ActivationTokenRowMapper`, `BlacklistedTokenRowMapper`, `PasswordResetTokenRowMapper` (`ResultSet` → entity), and `UserMapper` (entity ↔ dto, the only one of these four actually needed yet - the token entities/dtos are used directly by `AuthServiceImpl` without a full bidirectional mapper, since nothing outside the service ever needs a token dto's shape beyond what `AuthController` reads directly off `AuthService`'s own return types)
-- [ ] `UserDao` + `UserDaoImpl` (and the token DAOs), all `JdbcTemplate`-based, all unannotated, all working in `entity/` types
-- [ ] `AuthService` (interface) + `AuthServiceImpl`: registration, activation, login (password hashing/verification via `org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder`, used standalone), logout, forgot/reset password - every public method takes/returns `dto/` types, converting to/from `entity/` via `UserMapper` around each `UserDao` call
-- [ ] `forgotPassword` returns the exact same outcome - same behavior, roughly the same timing - whether or not the submitted email matches an existing account, so the endpoint can't be used to enumerate registered emails
-- [ ] `core/auth`'s `DaoConfig`/`ServiceConfig`
-- [ ] `ws`: `JwtService` (issuance/validation via `jjwt`, unique `jti` per token), `JwtAuthFilter`, `AuthController`, `UserConverter` (`core.auth.dto.UserDto` ↔ `ws.payload.auth.*`)
-- [ ] `WebMvcConfig` updated to import `core/auth`'s `DaoConfig`/`ServiceConfig`
-- [ ] Tests at all five layers (see [Testing strategy](#testing-strategy)): `UserDao`/token DAOs against Testcontainers with their own fixture files, each `RowMapper` against a mocked `ResultSet`, `UserMapper` against a hand-built entity/dto pair (pure unit test, no mocks needed), `AuthServiceImpl` with `UserDao` mocked, `AuthController` via `MockMvc` with `AuthService` mocked - plus one full register → activate → login → `/me` flow
+- [x] `core/auth`: `User`, `ActivationToken`, `BlacklistedToken`, `PasswordResetToken` **entity** classes (`entity/`, `@Table("users")`/`@Table("activation_tokens")`/etc., `@Id`/`@Column` on fields, plain Java otherwise) and their matching `UserDto`, `ActivationTokenDto`, `BlacklistedTokenDto`, `PasswordResetTokenDto` classes (`dto/`)
+- [x] `UserRowMapper`, `ActivationTokenRowMapper`, `BlacklistedTokenRowMapper`, `PasswordResetTokenRowMapper` (`ResultSet` → entity), and `UserMapper` (entity ↔ dto, the only one of these four actually needed yet - the token entities/dtos are used directly by `AuthServiceImpl` without a full bidirectional mapper, since nothing outside the service ever needs a token dto's shape beyond what `AuthController` reads directly off `AuthService`'s own return types)
+- [x] `UserDao` + `UserDaoImpl` (and the token DAOs), all `JdbcTemplate`-based, all unannotated, all working in `entity/` types
+- [x] `AuthService` (interface) + `AuthServiceImpl`: registration, activation, login (password hashing/verification via `org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder`, used standalone), logout, forgot/reset password - every public method takes/returns `dto/` types, converting to/from `entity/` via `UserMapper` around each `UserDao` call
+- [x] `forgotPassword` returns the exact same outcome - same behavior, roughly the same timing - whether or not the submitted email matches an existing account, so the endpoint can't be used to enumerate registered emails
+- [x] `core/auth`'s `DaoConfig`/`ServiceConfig`
+- [x] `ws`: `JwtService` (issuance/validation via `jjwt`, unique `jti` per token), `JwtAuthFilter`, `AuthController`, `UserConverter` (`core.auth.dto.UserDto` ↔ `ws.payload.auth.*`)
+- [x] `WebMvcConfig` updated to import `core/auth`'s `DaoConfig`/`ServiceConfig`
+- [x] Tests at all five layers (see [Testing strategy](#testing-strategy)): `UserDao`/token DAOs against Testcontainers with their own fixture files, each `RowMapper` against a mocked `ResultSet`, `UserMapper` against a hand-built entity/dto pair (pure unit test, no mocks needed), `AuthServiceImpl` with `UserDao` mocked, `AuthController` via `MockMvc` with `AuthService` mocked - plus one full register → activate → login → `/me` flow
 
 ## feature/rbac
 

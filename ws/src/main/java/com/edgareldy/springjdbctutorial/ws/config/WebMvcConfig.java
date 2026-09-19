@@ -29,28 +29,35 @@ import java.util.List;
 // plain Spring, without Boot. The WebMvcConfigurer callbacks below customise it.
 //
 // Core module configs are imported here in the SAME context (one shared context). CommonConfig comes
-// first; each later branch adds its module's DaoConfig and ServiceConfig to the @Import list.
+// first; each later branch adds its module's ServiceConfig (which imports its own DaoConfig) to the @Import
+// list, fully qualified because every module uses the same simple names. SecurityConfig is imported too.
 //
 // The component scan is limited to the web layer (controllers and the advice): those are the only
 // stereotypes of the project. DAO and service implementations are never scanned, they are explicit
 // @Bean methods, so nothing gets wired by accident.
 @Configuration
 @EnableWebMvc
-@Import(CommonConfig.class)
+@Import({CommonConfig.class, com.edgareldy.springjdbctutorial.core.auth.config.ServiceConfig.class, SecurityConfig.class})
 @ComponentScan({"com.edgareldy.springjdbctutorial.ws.controller", "com.edgareldy.springjdbctutorial.ws.exception"})
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    // Swaps the default Jackson converter for one built on our ObjectMapper and keeps every other
-    // default converter (String, byte[], Resource...). The builder registers the JSR-310 module
-    // (jackson-datatype-jsr310) found on the classpath; disabling WRITE_DATES_AS_TIMESTAMPS makes
-    // Instant serialise as ISO-8601 text instead of a number. Null fields stay in the output.
-    @Override
-    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        ObjectMapper mapper = Jackson2ObjectMapperBuilder.json()
+    // ONE shared ObjectMapper bean: the MVC converter below and the security handlers (401/403 bodies,
+    // written outside MVC) must serialise ApiResponse identically. The builder registers the JSR-310
+    // module found on the classpath; disabling WRITE_DATES_AS_TIMESTAMPS makes Instant serialise as
+    // ISO-8601 text instead of a number. Null fields stay in the output.
+    @Bean
+    public ObjectMapper objectMapper() {
+        return Jackson2ObjectMapperBuilder.json()
                 .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .build();
+    }
+
+    // Swaps the default Jackson converter for one built on the shared ObjectMapper and keeps every
+    // other default converter (String, byte[], Resource...).
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         converters.removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
-        converters.add(0, new MappingJackson2HttpMessageConverter(mapper));
+        converters.add(0, new MappingJackson2HttpMessageConverter(objectMapper()));
     }
 
     // LocalValidatorFactoryBean bootstraps Bean Validation (Hibernate Validator on the classpath).

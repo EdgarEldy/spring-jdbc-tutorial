@@ -3,19 +3,24 @@ package com.edgareldy.springjdbctutorial.ws.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration;
+import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.filter.CharacterEncodingFilter;
+import org.springframework.web.filter.DelegatingFilterProxy;
 import org.springframework.web.servlet.DispatcherServlet;
 
 /**
@@ -37,6 +42,8 @@ class WebAppInitializerTest {
         when(servletContext.addServlet(eq("dispatcher"), any(Servlet.class))).thenReturn(servletRegistration);
         when(servletContext.addFilter(eq("characterEncodingFilter"), any(Filter.class)))
                 .thenReturn(filterRegistration);
+        when(servletContext.addFilter(eq("springSecurityFilterChain"), any(Filter.class)))
+                .thenReturn(mock(FilterRegistration.Dynamic.class));
 
         new WebAppInitializer().onStartup(servletContext);
 
@@ -54,6 +61,8 @@ class WebAppInitializerTest {
                 .thenReturn(mock(ServletRegistration.Dynamic.class));
         when(servletContext.addFilter(eq("characterEncodingFilter"), any(Filter.class)))
                 .thenReturn(mock(FilterRegistration.Dynamic.class));
+        when(servletContext.addFilter(eq("springSecurityFilterChain"), any(Filter.class)))
+                .thenReturn(mock(FilterRegistration.Dynamic.class));
 
         new WebAppInitializer().onStartup(servletContext);
 
@@ -70,6 +79,8 @@ class WebAppInitializerTest {
                 .thenReturn(mock(ServletRegistration.Dynamic.class));
         when(servletContext.addFilter(eq("characterEncodingFilter"), any(Filter.class)))
                 .thenReturn(filterRegistration);
+        when(servletContext.addFilter(eq("springSecurityFilterChain"), any(Filter.class)))
+                .thenReturn(mock(FilterRegistration.Dynamic.class));
 
         new WebAppInitializer().onStartup(servletContext);
 
@@ -77,5 +88,29 @@ class WebAppInitializerTest {
         verify(servletContext).addFilter(eq("characterEncodingFilter"), filter.capture());
         assertThat(filter.getValue()).isInstanceOf(CharacterEncodingFilter.class);
         verify(filterRegistration).addMappingForUrlPatterns(any(), eq(false), eq("/*"));
+    }
+
+    @Test
+    void _04_ShouldRegisterSecurityFilterChainProxyAfterEncodingFilter_WhenApplicationStarts() {
+        ServletContext servletContext = mock(ServletContext.class);
+        FilterRegistration.Dynamic encoding = mock(FilterRegistration.Dynamic.class);
+        FilterRegistration.Dynamic security = mock(FilterRegistration.Dynamic.class);
+        when(servletContext.addServlet(eq("dispatcher"), any(Servlet.class)))
+                .thenReturn(mock(ServletRegistration.Dynamic.class));
+        when(servletContext.addFilter(eq("characterEncodingFilter"), any(Filter.class))).thenReturn(encoding);
+        when(servletContext.addFilter(eq("springSecurityFilterChain"), any(Filter.class))).thenReturn(security);
+
+        new WebAppInitializer().onStartup(servletContext);
+
+        // Registration order is the servlet filter order: encoding first, then security
+        InOrder order = inOrder(servletContext);
+        order.verify(servletContext).addFilter(eq("characterEncodingFilter"), any(Filter.class));
+        order.verify(servletContext).addFilter(eq("springSecurityFilterChain"), any(Filter.class));
+        ArgumentCaptor<Filter> filter = ArgumentCaptor.forClass(Filter.class);
+        verify(servletContext).addFilter(eq("springSecurityFilterChain"), filter.capture());
+        assertThat(filter.getValue()).isInstanceOf(DelegatingFilterProxy.class);
+        verify(security).addMappingForUrlPatterns(
+                eq(EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC)), eq(false),
+                eq("/*"));
     }
 }

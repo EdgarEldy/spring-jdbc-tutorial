@@ -3,7 +3,7 @@
 #
 # Before the first "docker compose up --build":
 #   1. cp .env.example .env and set DB_PASSWORD (there is no default password on purpose)
-#   2. from the feature/auth branch on, create a production RSA key pair in ./keys (the keys under
+#   2. create a production RSA key pair in ./keys (the keys under
 #      dev-keys/ are for development only):
 #        mkdir -p keys
 #        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out keys/privateKey.pem
@@ -40,6 +40,11 @@ services:
       APP_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-spring_jdbc_tutorial}
       APP_DATASOURCE_USERNAME: ${DB_USER:-spring}
       APP_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      # No default key: the application refuses to start without these two locations
+      APP_JWT_PRIVATE_KEY_LOCATION: file:/keys/privateKey.pem
+      APP_JWT_PUBLIC_KEY_LOCATION: file:/keys/publicKey.pem
+    volumes:
+      - ./keys:/keys:ro
     ports:
       - "${APP_PORT:-8080}:8080"
 

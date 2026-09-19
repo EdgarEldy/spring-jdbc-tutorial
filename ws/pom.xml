@@ -68,6 +68,30 @@
             <groupId>org.glassfish.expressly</groupId>
             <artifactId>expressly</artifactId>
         </dependency>
+        <!-- Spring Security 6 configured explicitly (SecurityFilterChain), no auto-configuration -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+        <!-- JWT issuance and validation: API at compile time, implementation and JSON binding at runtime -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -77,6 +101,11 @@
             <groupId>com.edgareldy.springjdbctutorial</groupId>
             <artifactId>common</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -95,6 +124,18 @@
         <!-- ws/target/ws.war, as the README says -->
         <finalName>ws</finalName>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- The tests use the development key pair kept at the repository root (dev-keys/),
+                         never packaged. ${project.basedir}/.. is the repository root. -->
+                    <systemPropertyVariables>
+                        <app.jwt.private-key-location>file:${project.basedir}/../dev-keys/privateKey.pem</app.jwt.private-key-location>
+                        <app.jwt.public-key-location>file:${project.basedir}/../dev-keys/publicKey.pem</app.jwt.public-key-location>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
