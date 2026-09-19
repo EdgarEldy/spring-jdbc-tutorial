@@ -1,5 +1,6 @@
 package com.edgareldy.springjdbctutorial.ws.exception;
 
+import com.edgareldy.springjdbctutorial.core.auth.exception.AuthenticationFailedException;
 import com.edgareldy.springjdbctutorial.core.common.exception.BusinessRuleException;
 import com.edgareldy.springjdbctutorial.core.common.exception.ResourceNotFoundException;
 import com.edgareldy.springjdbctutorial.ws.payload.common.ApiResponse;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -126,8 +129,24 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_ACCEPTABLE, "Not acceptable");
     }
 
-    // AUTH BRANCH: add handlers here for AccessDeniedException (403) and AuthenticationException (401).
-    // They are intentionally absent now: no Spring Security dependency exists yet.
+    // Authentication failures raised by the auth service (bad credentials, inactive account) are 401
+    // with the core message. Spring Security's own AuthenticationException gets a generic message.
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationFailed(AuthenticationFailedException e) {
+        return build(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSpringAuthentication(AuthenticationException e) {
+        return build(HttpStatus.UNAUTHORIZED, "Authentication required");
+    }
+
+    // A denied @PreAuthorize inside a controller surfaces as AccessDeniedException: without this handler
+    // the catch-all would turn it into a 500.
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException e) {
+        return build(HttpStatus.FORBIDDEN, "Access denied");
+    }
 
     // Catch-all. Other Spring MVC exceptions implementing ErrorResponse keep the status they carry but
     // never their detail text (framework wording): the client gets the standard reason phrase of the
