@@ -176,7 +176,9 @@ public class AuthServiceImpl implements AuthService {
         // Token and hash are generated whether or not the account exists, so the work is alike
         String rawToken = tokenHasher.generateRawToken();
         String tokenHash = tokenHasher.sha256Hex(rawToken);
-        String normalized = email == null ? "" : normalizeEmail(email);
+        // A null or blank email is simply an unknown account here: normalizeEmail would throw a 422 and
+        // reveal a different behaviour than the generic answer
+        String normalized = email == null || email.isBlank() ? "" : normalizeEmail(email);
         User user = userDao.findByEmail(normalized).orElse(null);
         // The delete runs for an unknown account too (on an id that matches nothing), so the only work
         // skipped when the email is unknown is the final insert and the log line

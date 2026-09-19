@@ -456,10 +456,18 @@ class AuthServiceImplTest {
         verify(passwordResetTokenDao, never()).insert(any());
     }
 
+    // Non-regression: a blank email used to throw a 422 here, unlike the generic answer for an unknown one
+    @Test
+    void _30_ShouldNotThrow_WhenEmailIsBlank() {
+        assertThatCode(() -> service.forgotPassword("   ")).doesNotThrowAnyException();
+
+        verify(passwordResetTokenDao, never()).insert(any());
+    }
+
     // ---------------------------------------------------------------- resetPassword
 
     @Test
-    void _30_ShouldStoreNewHashAndDeleteResetTokens_WhenTokenIsValid() throws Exception {
+    void _31_ShouldStoreNewHashAndDeleteResetTokens_WhenTokenIsValid() throws Exception {
         PasswordResetToken token = new PasswordResetToken(3L, 5L, sha256("raw-reset"), "PASSWORD_RESET",
                 NOW.plusSeconds(600));
         when(passwordResetTokenDao.findByTokenHash(sha256("raw-reset"))).thenReturn(Optional.of(token));
@@ -473,7 +481,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void _31_ShouldThrowBusinessRuleException_WhenResetTokenIsExpired() {
+    void _32_ShouldThrowBusinessRuleException_WhenResetTokenIsExpired() {
         PasswordResetToken expired = new PasswordResetToken(3L, 5L, "h", "PASSWORD_RESET", NOW);
         when(passwordResetTokenDao.findByTokenHash(anyString())).thenReturn(Optional.of(expired));
 
@@ -484,7 +492,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void _32_ShouldThrowBusinessRuleException_WhenResetTokenIsUnknown() {
+    void _33_ShouldThrowBusinessRuleException_WhenResetTokenIsUnknown() {
         when(passwordResetTokenDao.findByTokenHash(anyString())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.resetPassword("raw", "Brand-new-pass1"))
@@ -494,7 +502,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void _33_ShouldThrowBusinessRuleException_WhenNewPasswordExceeds72Bytes() {
+    void _34_ShouldThrowBusinessRuleException_WhenNewPasswordExceeds72Bytes() {
         PasswordResetToken token = new PasswordResetToken(3L, 5L, "h", "PASSWORD_RESET", NOW.plusSeconds(600));
         when(passwordResetTokenDao.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
@@ -509,7 +517,7 @@ class AuthServiceImplTest {
     // ---------------------------------------------------------------- purgeExpiredTokens
 
     @Test
-    void _34_ShouldDeleteRowsExpiredBeforeNowAndReturnTheCount_WhenPurging() {
+    void _35_ShouldDeleteRowsExpiredBeforeNowAndReturnTheCount_WhenPurging() {
         when(blacklistedTokenDao.deleteExpiredBefore(NOW)).thenReturn(3);
 
         assertThat(service.purgeExpiredTokens()).isEqualTo(3);
