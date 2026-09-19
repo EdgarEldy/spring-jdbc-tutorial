@@ -7,6 +7,7 @@ import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.filter.CharacterEncodingFilter;
+import org.springframework.web.filter.DelegatingFilterProxy;
 import org.springframework.web.servlet.DispatcherServlet;
 
 import java.util.EnumSet;
@@ -45,5 +46,16 @@ public class WebAppInitializer implements WebApplicationInitializer {
                 servletContext.addFilter("characterEncodingFilter", new CharacterEncodingFilter("UTF-8", true));
         encoding.setAsyncSupported(true);
         encoding.addMappingForUrlPatterns(EnumSet.of(jakarta.servlet.DispatcherType.REQUEST), false, "/*");
+
+        // DelegatingFilterProxy is a thin servlet filter that looks up the Spring bean named
+        // "springSecurityFilterChain" (created by @EnableWebSecurity) in the ROOT context and delegates
+        // to it. That is why the one context must be the root context too (ContextLoaderListener): the
+        // servlet container instantiates the filter, only Spring can build the security chain. It is
+        // registered after the encoding filter, on every dispatch type incl. ERROR and ASYNC.
+        FilterRegistration.Dynamic security =
+                servletContext.addFilter("springSecurityFilterChain", new DelegatingFilterProxy("springSecurityFilterChain"));
+        security.setAsyncSupported(true);
+        security.addMappingForUrlPatterns(EnumSet.of(jakarta.servlet.DispatcherType.REQUEST,
+                jakarta.servlet.DispatcherType.ERROR, jakarta.servlet.DispatcherType.ASYNC), false, "/*");
     }
 }
