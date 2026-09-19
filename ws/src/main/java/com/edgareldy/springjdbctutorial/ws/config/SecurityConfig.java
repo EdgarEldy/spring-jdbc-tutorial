@@ -1,16 +1,22 @@
 package com.edgareldy.springjdbctutorial.ws.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.edgareldy.springjdbctutorial.core.auth.service.ActorProvider;
 import com.edgareldy.springjdbctutorial.core.auth.service.AuthService;
 import com.edgareldy.springjdbctutorial.ws.security.ApiAccessDeniedHandler;
 import com.edgareldy.springjdbctutorial.ws.security.ApiAuthenticationEntryPoint;
 import com.edgareldy.springjdbctutorial.ws.security.JwtAuthFilter;
+import com.edgareldy.springjdbctutorial.ws.security.CustomPermissionEvaluator;
 import com.edgareldy.springjdbctutorial.ws.security.JwtService;
+import com.edgareldy.springjdbctutorial.ws.security.SecurityContextActorProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -33,8 +39,13 @@ import java.time.Clock;
 // @EnableWebSecurity registers the Spring Security infrastructure and the servlet filter named
 // "springSecurityFilterChain" (a FilterChainProxy) that the DelegatingFilterProxy of WebAppInitializer
 // delegates to. Every SecurityFilterChain bean declared here becomes one ordered list of security filters.
+// @EnableMethodSecurity turns on @PreAuthorize/@PostAuthorize: Spring wraps the beans that carry them in
+// AOP proxies (CGLIB class proxies here, controllers implement no interface) whose interceptor evaluates
+// the expression before the method runs and throws AccessDeniedException when it is false. Controllers
+// carry the rule declaratively, never a manual permission check.
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(proxyTargetClass = true)
 public class SecurityConfig {
 
     // Read from the Environment: the two key locations have no default (startup fails clearly when
@@ -83,5 +94,28 @@ public class SecurityConfig {
                         .accessDeniedHandler(apiAccessDeniedHandler))
                 .addFilterBefore(new JwtAuthFilter(jwtService, authService), UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    public CustomPermissionEvaluator customPermissionEvaluator() {
+        return new CustomPermissionEvaluator();
+    }
+
+    // The expression handler is what evaluates hasPermission(...) inside @PreAuthorize: registering the
+    // evaluator on it is how hasPermission('ROLE','WRITE') reaches CustomPermissionEvaluator. The bean
+    // method is static because the method security infrastructure (a BeanPostProcessor) needs it very
+    // early: a static @Bean can be created without instantiating this configuration class first, which
+    // avoids the "not eligible for auto-proxying" warning and early-initialisation problems.
+    @Bean
+    public static MethodSecurityExpressionHandler methodSecurityExpressionHandler(
+            CustomPermissionEvaluator customPermissionEvaluator) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setPermissionEvaluator(customPermissionEvaluator);
+        return handler;
+    }
+
+    @Bean
+    public ActorProvider actorProvider() {
+        return new SecurityContextActorProvider();
     }
 }

@@ -13,7 +13,10 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -28,6 +31,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -73,8 +77,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodValidation(HandlerMethodValidationException e) {
-        String message = e.getAllErrors().stream()
-                .map(error -> error.getDefaultMessage())
+        // One "parameter: message" entry per violated constraint, like the "field: message" of body errors
+        String message = e.getParameterValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream()
+                        .map(error -> Objects.requireNonNullElse(result.getMethodParameter().getParameterName(),
+                                "parameter") + ": " + error.getDefaultMessage()))
                 .sorted()
                 .collect(Collectors.joining("; "));
         return build(HttpStatus.BAD_REQUEST, message);
@@ -142,9 +149,14 @@ public class GlobalExceptionHandler {
     }
 
     // A denied @PreAuthorize inside a controller surfaces as AccessDeniedException: without this handler
-    // the catch-all would turn it into a 500.
+    // the catch-all would turn it into a 500. With no real authentication (null or anonymous) the caller
+    // is unauthenticated, so the answer is 401 rather than 403.
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException e) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return build(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
         return build(HttpStatus.FORBIDDEN, "Access denied");
     }
 

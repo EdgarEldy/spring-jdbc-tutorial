@@ -369,18 +369,18 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `Role`, `Permission`, `AuditLog` entity classes (`entity/`, `@Table("roles")`/`@Table("permissions")`/`@Table("audit_logs")`) and `RoleDto`/`PermissionDto`/`AuditLogDto` (`dto/`), `RoleRowMapper`/`PermissionRowMapper`/`AuditLogRowMapper` (entity, from `ResultSet`) plus `RoleMapper`/`PermissionMapper`/`AuditLogMapper` (entity ↔ dto), `RoleDao`/`PermissionDao`/`AuditLogDao` + impl (working in entity/ types)
-- [ ] `RbacService` (interface) + `RbacServiceImpl`:
+- [x] `Role`, `Permission`, `AuditLog` entity classes (`entity/`, `@Table("roles")`/`@Table("permissions")`/`@Table("audit_logs")`) and `RoleDto`/`PermissionDto`/`AuditLogDto` (`dto/`), `RoleRowMapper`/`PermissionRowMapper`/`AuditLogRowMapper` (entity, from `ResultSet`) plus `RoleMapper`/`PermissionMapper`/`AuditLogMapper` (entity ↔ dto), `RoleDao`/`PermissionDao`/`AuditLogDao` + impl (working in entity/ types)
+- [x] `RbacService` (interface) + `RbacServiceImpl`:
   - `createRole`/`updateRole`/`deleteRole` - `deleteRole` rejects if any user is still assigned this role
   - `createPermission`/`updatePermission`/`deletePermission` - rejects if any role still has this permission
   - `assignPermissionToRole`/`removePermissionFromRole` - rejects removing `ROLE:WRITE` from a role if it would leave zero users anywhere holding a role that grants it
   - `assignRoleToUser`/`removeRoleFromUser` - the same last-admin check applied at the point of removal from a specific user
-- [ ] `AuditLogger`/`AuditLoggerImpl`: a single `log(String action, String entityType, Long entityId, String details)` method, called from every `RbacServiceImpl` mutation
-- [ ] `CustomPermissionEvaluator` (`ws`, implements Spring Security's `PermissionEvaluator`): resolves the authenticated user's permissions (loaded once at login and embedded in the JWT, read from the `Authentication` object - no database call per request) and answers `hasPermission(target, permission)` calls from `@PreAuthorize`
-- [ ] `SecurityConfig` updated: `@EnableMethodSecurity`, `CustomPermissionEvaluator` registered on the `MethodSecurityExpressionHandler`
-- [ ] A seeding step (a Flyway data-migration): baseline permissions covering every resource/action this project defines, assigned to a seeded `ADMIN` role - without this, nobody could ever be granted `ROLE:WRITE`/`PERMISSION:WRITE` to create the first assignment
-- [ ] `RoleController`, `PermissionController`, `UserController` role-assignment endpoints, `RoleConverter`/`PermissionConverter`
-- [ ] Tests at all five layers, including the "still referenced" rejection on `deleteRole`/`deletePermission`, the last-admin rejection triggered both ways, `CustomPermissionEvaluator` allowing/denying correctly, and an assertion that every `RbacServiceImpl` mutation produces a matching `AuditLog` row
+- [x] `AuditLogger`/`AuditLoggerImpl`: a single `log(String action, String entityType, Long entityId, String details)` method, called from every `RbacServiceImpl` mutation
+- [x] `CustomPermissionEvaluator` (`ws`, implements Spring Security's `PermissionEvaluator`): resolves the authenticated user's permissions (loaded once at login and embedded in the JWT, read from the `Authentication` object - no database call per request) and answers `hasPermission(target, permission)` calls from `@PreAuthorize`
+- [x] `SecurityConfig` updated: `@EnableMethodSecurity`, `CustomPermissionEvaluator` registered on the `MethodSecurityExpressionHandler`
+- [x] A seeding step (a Flyway data-migration): baseline permissions covering every resource/action this project defines, assigned to a seeded `ADMIN` role - without this, nobody could ever be granted `ROLE:WRITE`/`PERMISSION:WRITE` to create the first assignment
+- [x] `RoleController`, `PermissionController`, `UserController` role-assignment endpoints, `RoleConverter`/`PermissionConverter`
+- [x] Tests at all five layers, including the "still referenced" rejection on `deleteRole`/`deletePermission`, the last-admin rejection triggered both ways, `CustomPermissionEvaluator` allowing/denying correctly, and an assertion that every `RbacServiceImpl` mutation produces a matching `AuditLog` row
 
 ## feature/catalog
 
