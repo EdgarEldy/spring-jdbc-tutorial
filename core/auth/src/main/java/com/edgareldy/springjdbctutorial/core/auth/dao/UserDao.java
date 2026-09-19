@@ -34,4 +34,28 @@ public interface UserDao {
 
     /** Distinct "RESOURCE:ACTION" codes granted through the user's roles, sorted. */
     List<String> findPermissionCodesByUserId(Long userId);
+
+    /** One page of users ordered by id (LIMIT/OFFSET). The page is zero-based. */
+    List<User> findPage(int page, int size);
+
+    long countAll();
+
+    void addRole(Long userId, Long roleId);
+
+    /** Returns the number of rows removed (0 when the role was not assigned). */
+    int removeRole(Long userId, Long roleId);
+
+    boolean hasRole(Long userId, Long roleId);
+
+    /**
+     * Number of distinct users that are enabled AND not locked and hold the ROLE:WRITE permission through
+     * one of their roles. Reads database state, not live tokens.
+     */
+    long countLastAdminCandidates();
+
+    /**
+     * Takes a transaction-scoped advisory lock: must be the first statement of any transaction that could
+     * remove the last ROLE:WRITE holder. Released automatically at commit or rollback.
+     */
+    void acquireLastAdminLock();
 }
