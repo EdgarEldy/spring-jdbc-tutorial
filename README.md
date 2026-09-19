@@ -421,10 +421,10 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/customer`: `Customer` entity (`@Table("customers")`) and `CustomerDto`, `CustomerRowMapper` (entity) plus `CustomerMapper` (entity ↔ dto), `CustomerDao` + impl, `CustomerService` + impl, `DaoConfig`/`ServiceConfig`
-- [ ] `ws`: `CustomerController`, `CustomerConverter`
-- [ ] `WebMvcConfig` updated to import `core/customer`'s config
-- [ ] Tests at all five layers, `CustomerDao` with its own fixture dataset
+- [x] `core/customer`: `Customer` entity (`@Table("customers")`) and `CustomerDto`, `CustomerRowMapper` (entity) plus `CustomerMapper` (entity ↔ dto), `CustomerDao` + impl, `CustomerService` + impl, `DaoConfig`/`ServiceConfig`
+- [x] `ws`: `CustomerController`, `CustomerConverter`
+- [x] `WebMvcConfig` updated to import `core/customer`'s config
+- [x] Tests at all five layers, `CustomerDao` with its own fixture dataset
 
 ## feature/order
 
