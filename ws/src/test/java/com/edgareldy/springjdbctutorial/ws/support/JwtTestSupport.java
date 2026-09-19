@@ -42,6 +42,22 @@ public final class JwtTestSupport {
                 3600L, ISSUER, clock);
     }
 
+    /** Every permission of the V2 seed, in "RESOURCE:ACTION" form. */
+    public static final List<String> ALL_PERMISSIONS = List.of(
+            "USER:READ", "USER:WRITE", "ROLE:READ", "ROLE:WRITE", "PERMISSION:READ", "PERMISSION:WRITE",
+            "CATEGORY:READ", "CATEGORY:WRITE", "PRODUCT:READ", "PRODUCT:WRITE", "CUSTOMER:READ", "CUSTOMER:WRITE",
+            "ORDER:READ", "ORDER:WRITE");
+
+    /**
+     * A genuine token signed with the dev private key, carrying exactly the given permissions in its claim.
+     * The controller tests use it instead of a login: the mocked service layer has no database to log into.
+     */
+    public static String tokenWithPermissions(long userId, List<String> permissions) {
+        com.edgareldy.springjdbctutorial.core.auth.dto.UserDto user = new com.edgareldy.springjdbctutorial.core.auth.dto.UserDto(
+                userId, "Test", "User", "user-" + userId + "@example.com", null, true, false, List.of(), permissions);
+        return devJwtService(Clock.systemUTC()).issue(user).getToken();
+    }
+
     /** A fresh 2048 bit RSA key pair, never related to the dev keys. */
     public static KeyPair generateKeyPair() {
         try {
