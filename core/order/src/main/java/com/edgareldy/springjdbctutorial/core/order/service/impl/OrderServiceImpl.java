@@ -93,10 +93,8 @@ public class OrderServiceImpl implements OrderService {
         if (exact.compareTo(MAX_TOTAL) > 0) {
             throw new BusinessRuleException("Order total must not exceed " + MAX_TOTAL.toPlainString());
         }
+        // MAX_TOTAL has two decimals, so rounding a value at or below it to two decimals cannot exceed it
         BigDecimal total = exact.setScale(2, RoundingMode.HALF_UP);
-        if (total.compareTo(MAX_TOTAL) > 0) {
-            throw new BusinessRuleException("Order total must not exceed " + MAX_TOTAL.toPlainString());
-        }
 
         Order order = new Order(null, input.getCustomerId(), input.getProductId(), quantity, total);
         try {
