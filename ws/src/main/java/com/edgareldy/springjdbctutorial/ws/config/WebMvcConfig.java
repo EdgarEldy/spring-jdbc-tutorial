@@ -37,7 +37,8 @@ import java.util.List;
 // @Bean methods, so nothing gets wired by accident.
 @Configuration
 @EnableWebMvc
-@Import({CommonConfig.class, com.edgareldy.springjdbctutorial.core.auth.config.ServiceConfig.class, SecurityConfig.class})
+@Import({CommonConfig.class, com.edgareldy.springjdbctutorial.core.auth.config.ServiceConfig.class,
+        com.edgareldy.springjdbctutorial.core.catalog.config.ServiceConfig.class, SecurityConfig.class})
 @ComponentScan({"com.edgareldy.springjdbctutorial.ws.controller", "com.edgareldy.springjdbctutorial.ws.exception"})
 public class WebMvcConfig implements WebMvcConfigurer {
 

@@ -401,11 +401,11 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/catalog`: `Category`, `Product` entity classes (`@Table("categories")`/`@Table("products")`) and `CategoryDto`/`ProductDto`, `CategoryRowMapper`/`ProductRowMapper` (entity) plus `CategoryMapper`/`ProductMapper` (entity ↔ dto), `CategoryDao`/`ProductDao` + impl, `CategoryService`/`ProductService` + impl, `DaoConfig`/`ServiceConfig`
-- [ ] Business rule: deleting a category that still has products is rejected (`BusinessRuleException` → 422)
-- [ ] `ws`: `CategoryController`, `ProductController`, `CategoryConverter`, `ProductConverter`
-- [ ] `WebMvcConfig` updated to import `core/catalog`'s config
-- [ ] Tests at all five layers - `CategoryDao`/`ProductDao` each with their own fixture dataset, the category-deletion rejection case, a permission-denied case
+- [x] `core/catalog`: `Category`, `Product` entity classes (`@Table("categories")`/`@Table("products")`) and `CategoryDto`/`ProductDto`, `CategoryRowMapper`/`ProductRowMapper` (entity) plus `CategoryMapper`/`ProductMapper` (entity ↔ dto), `CategoryDao`/`ProductDao` + impl, `CategoryService`/`ProductService` + impl, `DaoConfig`/`ServiceConfig`
+- [x] Business rule: deleting a category that still has products is rejected (`BusinessRuleException` → 422)
+- [x] `ws`: `CategoryController`, `ProductController`, `CategoryConverter`, `ProductConverter`
+- [x] `WebMvcConfig` updated to import `core/catalog`'s config
+- [x] Tests at all five layers - `CategoryDao`/`ProductDao` each with their own fixture dataset, the category-deletion rejection case, a permission-denied case
 
 ## feature/customer
 
