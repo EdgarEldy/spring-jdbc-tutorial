@@ -1,5 +1,6 @@
 package com.edgareldy.springjdbctutorial.ws.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.edgareldy.springjdbctutorial.core.common.config.CommonConfig;
@@ -51,7 +52,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Bean
     public ObjectMapper objectMapper() {
         return Jackson2ObjectMapperBuilder.json()
-                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+                        // Jackson would silently truncate 1.5 to 1 for an int field, i.e. order one unit
+                        // instead of refusing the body: a decimal is never a valid integer here
+                        DeserializationFeature.ACCEPT_FLOAT_AS_INT)
                 .build();
     }
 
