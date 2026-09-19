@@ -209,7 +209,7 @@ spring-jdbc-tutorial/
 │           ├── dto/ (OrderDto.java)
 │           ├── mapper/ (OrderRowMapper.java, OrderMapper.java)
 │           ├── dao/ (OrderDao.java + impl/)
-│           ├── service/ (OrderService.java + impl/, depends on CategoryService/ProductService/CustomerService)
+│           ├── service/ (OrderService.java + impl/, depends on ProductService/CustomerService only: the category is never needed)
 │           └── config/ (DaoConfig.java, ServiceConfig.java)
 └── ws/
     ├── pom.xml                                    (depends on core/auth, core/catalog, core/customer, core/order)
@@ -438,11 +438,11 @@ Full CRUD for users, roles, and permissions, still inside `core/auth`. Assignmen
 
 ### Tasks
 
-- [ ] `core/order`: `Order` entity (`@Table("orders")`) and `OrderDto`, `OrderRowMapper` (entity) plus `OrderMapper` (entity ↔ dto), `OrderDao` + impl, `OrderService` + impl (depends on `catalog`'s `ProductService` and `customer`'s `CustomerService` - their service interfaces, never their DAOs directly): computes `total = quantity * product.unitPrice`, checks the referenced customer/product exist
-- [ ] `core/order`'s `DaoConfig`/`ServiceConfig` (the latter injecting `ProductService`/`CustomerService` beans from the other modules' contexts)
-- [ ] `ws`: `OrderController`, `OrderConverter`
-- [ ] `WebMvcConfig` updated to import `core/order`'s config
-- [ ] Tests at all five layers, `OrderDao` with its own fixture dataset, the total computation, and the not-found cases for a bad `customerId`/`productId`
+- [x] `core/order`: `Order` entity (`@Table("orders")`) and `OrderDto`, `OrderRowMapper` (entity) plus `OrderMapper` (entity ↔ dto), `OrderDao` + impl, `OrderService` + impl (depends on `catalog`'s `ProductService` and `customer`'s `CustomerService` - their service interfaces, never their DAOs directly): computes `total = quantity * product.unitPrice`, checks the referenced customer/product exist
+- [x] `core/order`'s `DaoConfig`/`ServiceConfig` (the latter injecting `ProductService`/`CustomerService` beans from the other modules' contexts)
+- [x] `ws`: `OrderController`, `OrderConverter`
+- [x] `WebMvcConfig` updated to import `core/order`'s config
+- [x] Tests at all five layers, `OrderDao` with its own fixture dataset, the total computation, and the not-found cases for a bad `customerId`/`productId`
 
 ## Order of work
 
