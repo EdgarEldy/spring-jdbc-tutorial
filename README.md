@@ -235,9 +235,9 @@ spring-jdbc-tutorial/
         │   │                                           in this project, since Spring MVC requires it for this mechanism)
         │   └── config/
         │       ├── WebAppInitializer.java            (WebApplicationInitializer, replaces web.xml)
-        │       ├── WebMvcConfig.java                 (@EnableWebMvc, imports every core module's DaoConfig/ServiceConfig)
+        │       ├── WebMvcConfig.java                 (@EnableWebMvc, imports every core module's DaoConfig/ServiceConfig, scans only ws.controller and ws.exception)
         │       ├── SecurityConfig.java                (SecurityFilterChain, method security enabling @PreAuthorize)
-        │       └── OpenApiConfig.java
+        │       └── OpenApiConfig.java                (not delivered: springdoc-openapi relies on Spring Boot classes)
         └── webapp/
             └── (empty - no JSPs, API-only)
 ├── docker-compose.yml
@@ -310,13 +310,13 @@ No other naming style (`shouldX()`, `testX()`, `givenX_whenY_thenZ()`) is used a
 
 ### Tasks
 
-- [ ] Parent `pom.xml` (packaging `pom`, modules `core`/`ws`, `dependencyManagement` for Spring Framework 6.2.x, Testcontainers, etc.)
-- [ ] `core/pom.xml` (packaging `pom`, modules `common`/`auth`/`catalog`/`customer`/`order`)
-- [ ] `core/common`: `ResourceNotFoundException`, `BusinessRuleException`, `AbstractDao` (holds a `JdbcTemplate` reference, offers a couple of shared helpers), `DataSourceConfig` (`DataSource` via HikariCP, `JdbcTemplate`, `DataSourceTransactionManager`)
-- [ ] Flyway script `V1__init_schema.sql` (all tables from both domains, including `audit_logs`)
-- [ ] `ws` skeleton: `WebAppInitializer` (`WebApplicationInitializer`), `WebMvcConfig` (`@EnableWebMvc`, no module config imported yet), `ApiResponse<T>`, `PageResponse<T>`, `GlobalExceptionHandler`
-- [ ] `docker-compose.yml` (`ws` deployed on Tomcat + PostgreSQL), `Dockerfile` (multi-stage: Maven build, Tomcat 10.1 runtime)
-- [ ] `.github/workflows/ci.yml`: `mvn verify` across the whole reactor
+- [x] Parent `pom.xml` (packaging `pom`, modules `core`/`ws`, `dependencyManagement` for Spring Framework 6.2.x, Testcontainers, etc.)
+- [x] `core/pom.xml` (packaging `pom`, modules `common`/`auth`/`catalog`/`customer`/`order`)
+- [x] `core/common`: `ResourceNotFoundException`, `BusinessRuleException`, `AbstractDao` (holds a `JdbcTemplate` reference, offers a couple of shared helpers), `DataSourceConfig` (`DataSource` via HikariCP, `JdbcTemplate`, `DataSourceTransactionManager`)
+- [x] Flyway script `V1__init_schema.sql` (all tables from both domains, including `audit_logs`)
+- [x] `ws` skeleton: `WebAppInitializer` (`WebApplicationInitializer`), `WebMvcConfig` (`@EnableWebMvc`, no module config imported yet), `ApiResponse<T>`, `PageResponse<T>`, `GlobalExceptionHandler`
+- [x] `docker-compose.yml` (`ws` deployed on Tomcat + PostgreSQL), `Dockerfile` (multi-stage: Maven build, Tomcat 10.1 runtime)
+- [x] `.github/workflows/ci.yml`: `mvn verify` across the whole reactor
 
 ## feature/auth
 

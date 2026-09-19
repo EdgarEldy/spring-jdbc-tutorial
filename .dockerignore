@@ -1,0 +1,8 @@
+# Keep the build context small and free of local files (keys, env files, git data)
+*
+!pom.xml
+!core/
+!ws/
+!mvnw
+!.mvn/
+**/target/
