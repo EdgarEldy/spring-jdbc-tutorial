@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Clock;
+
 /**
  * Wiring of the common module: imports the infrastructure and declares the health DAO and service.
  * <p>
@@ -32,5 +34,13 @@ public class CommonConfig {
     @Bean
     public HealthService healthService(HealthDao healthDao) {
         return new HealthServiceImpl(healthDao);
+    }
+
+    // A Clock bean is the injectable source of "now": services call clock.instant() instead of
+    // Instant.now(), so tests can supply Clock.fixed(...) and assert expiry logic deterministically.
+    // UTC because timestamps are stored as timestamptz and never depend on the server zone.
+    @Bean
+    public Clock clock() {
+        return Clock.systemUTC();
     }
 }
