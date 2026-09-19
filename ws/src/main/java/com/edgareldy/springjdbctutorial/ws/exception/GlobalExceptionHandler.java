@@ -31,6 +31,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -79,8 +80,8 @@ public class GlobalExceptionHandler {
         // One "parameter: message" entry per violated constraint, like the "field: message" of body errors
         String message = e.getParameterValidationResults().stream()
                 .flatMap(result -> result.getResolvableErrors().stream()
-                        .map(error -> result.getMethodParameter().getParameterName() + ": "
-                                + error.getDefaultMessage()))
+                        .map(error -> Objects.requireNonNullElse(result.getMethodParameter().getParameterName(),
+                                "parameter") + ": " + error.getDefaultMessage()))
                 .sorted()
                 .collect(Collectors.joining("; "));
         return build(HttpStatus.BAD_REQUEST, message);
